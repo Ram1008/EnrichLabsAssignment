@@ -1,0 +1,20 @@
+{
+  "name": "enrich-lab-assignment",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ram1008/EnrichLabsAssignment.git"
+  },
+  "author": "Ram Chandel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Ram1008/EnrichLabsAssignment/issues"
+  },
+  "homepage": "https://github.com/Ram1008/EnrichLabsAssignment#readme",
+  "description": ""
+}
