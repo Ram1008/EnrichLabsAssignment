@@ -2,11 +2,9 @@
 
 A minimal distributed system using Node.js, RabbitMQ, and MongoDB to handle background jobs through rate-limited sync and async vendor integrations.
 
----
-
 ## Quick Start
 
-```bash
+```
 # 1. Clone the repo
 git clone https://github.com/Ram1008/EnrichLabsAssignment.git
 
@@ -17,47 +15,66 @@ docker-compose up --build
 
 ## Architecture
 
-                     +-------------+
-   POST /jobs        |             |  MongoDB (Job status/result)
- +--------------->   |   API       |----------------------------+
- |                   |             |                            |
- |                   +------+------+\                           |
- |                          |       \                          \/
- |                          |        +--------------------> [Job DB]
- |                          |        
- |                          |     <------------------+
- |                          |                         \
- |                   +------v------+\                  \
- |                   |               |     POST        |
- |                   |  Worker       +----> sync-vendor|
- |                   |               |     async-vendor|
- |                   +---------------+                 |
- |                                                     |
- +-----------------------------------------------------+
+  ![Architecture](https://github.com/user-attachments/assets/6fe55acd-da49-4e3a-af1e-5a4f1839a39a)
+
 
 Queue: RabbitMQ   |   Sync Vendor: 202 immediate reply  
 Async Vendor: Webhook callback → /vendor-webhook/:vendor
 
 ## Design Decisions & Trade-offs
 
-RabbitMQ was chosen for mature support of reliable queues and manual ACKs.
-Node.js + ES Modules kept both API and worker lightweight and consistent.
-Rate Limiting is implemented using a simple token-bucket pattern per vendor.
-Vendor Mock Split allowed separate control of sync/async behavior and failures.
-Webhook-first async vendor allows non-blocking job processing.
-Docker Compose used to unify all components for easy testing and deployment.
-No retry queue for failed jobs to keep logic simple and predictable.
+RabbitMQ was chosen for mature support of reliable queues and manual ACKs.  
+Node.js + ES Modules kept both API and worker lightweight and consistent.  
+Rate Limiting is implemented using a simple token-bucket pattern per vendor.  
+Vendor Mock Split allowed separate control of sync/async behavior and failures.  
+Webhook-first async vendor allows non-blocking job processing.  
+Docker Compose used to unify all components for easy testing and deployment.  
+No retry queue for failed jobs to keep logic simple and predictable.  
 
 ## Apis
+```
+[
+  {
+    "name": "Create Job",
+    "method": "POST",
+    "url": "http://localhost:5000/jobs",
+    "body": {
+      "foo": "bar",
+      "use_async": true
+    },
+    "description": "Creates a new job with any payload. Set use_async to true for async vendor."
+  },
+  {
+    "name": "Get Job by ID",
+    "method": "GET",
+    "url": "http://localhost:5000/jobs/:request_id",
+    "description": "Retrieves the job status and result for a given request_id."
+  },
+  {
+    "name": "Vendor Webhook",
+    "method": "POST",
+    "url": "http://localhost:5000/vendor-webhook/async",
+    "body": {
+      "request_id": "e3a12abc-9d48-4b7a-9ef3-1234567890ab",
+      "result": {
+        "id": "  job-123  ",
+        "data": {
+          "field1": "value1"
+        },
+        "pii": {
+          "email": "user@example.com"
+        }
+      }
+    },
+    "description": "Simulates an async vendor calling back with the final result."
+  }
+]
+```
 
-POST /jobs – accepts any payload, returns request_id
-GET /jobs/:id – returns status and result (if complete)
-POST /vendor-webhook/:vendor – for async vendor to send final results
+##  Load Tested (view load-test.js and k6-output.txt)
 
-##  Load Tested (view k6-output.txt)
-
-Tool: k6
-200 virtual users, 60s duration
-POST & GET mix
-MongoDB indexed on request_id
-Vendor rate limit: 3–5/sec depending on type
+Tool: k6  
+200 virtual users, 60s duration  
+POST & GET mix  
+MongoDB indexed on request_id  
+Vendor rate limit: 3–5/sec depending on type  
