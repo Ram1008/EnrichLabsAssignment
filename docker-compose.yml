@@ -6,6 +6,63 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file: api/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - rabbitmq
+      - mongo
+
+  worker:
+    build: ./worker
+    env_file: worker/.env
+    depends_on:
+      - rabbitmq
+      - mongo
+
+  sync-vendor:
+    build: ./worker   # you can reuse the same, since it starts both
+    command: ["node","vendors/syncMock.js"]
+    env_file: worker/.env
+    ports:
+      - "4000:4000"
+    depends_on:
+      - rabbitmq
+      - mongo
+
+  async-vendor:
+    build: ./worker
+    command: ["node", "vendors/asyncMock.js"]
+    env_file: worker/.env
+    ports:
+      - "4001:4001"
+    depends_on:
+      - rabbitmq
+      - mongo
 
 volumes:
   mongo-data:
+  rabbitmq-data:
