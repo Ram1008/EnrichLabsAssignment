@@ -2,11 +2,22 @@
 
 A minimal distributed system using Node.js, RabbitMQ, and MongoDB to handle background jobs through rate-limited sync and async vendor integrations.
 
+
+## Explore the workflow
+
+1. Submit a payload to the job API and receive its request ID.
+2. A RabbitMQ worker calls the selected synchronous or asynchronous vendor.
+3. Inspect job status and completion data; the asynchronous path finishes through a vendor webhook.
+
+**Engineering focus:** queue-based processing, per-vendor rate limiting and asynchronous completion. The example intentionally has no retry queue; see the tradeoffs below.
+
+
 ## Quick Start
 
 ```
 # 1. Clone the repo
 git clone https://github.com/Ram1008/EnrichLabsAssignment.git
+cd EnrichLabsAssignment
 
 # 2. Start everything
 docker-compose up --build
@@ -71,7 +82,9 @@ No retry queue for failed jobs to keep logic simple and predictable.
 ]
 ```
 
-##  Load Tested (view load-test.js and k6-output.txt)
+## Recorded load-test scenario (load-test.js and k6-output.txt)
+
+The checked-in results describe a prior run, not a current performance guarantee. Re-run with your hardware and service configuration before comparing throughput.
 
 Tool: k6  
 200 virtual users, 60s duration  
